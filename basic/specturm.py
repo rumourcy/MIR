@@ -38,3 +38,12 @@ def stft(y, n_fft=2048, hop_length=None, win_length=None, window='hann',
             axis=0)[:stft_matrix.shape[0]]
 
     return stft_matrix
+
+
+def _spectrogram(y=None, S=None, n_fft=2048, hop_length=512, power=1):
+    if S is not None:
+        n_fft = 2 * (S.shape[0] - 1)
+    else:
+        S = np.abs(stft(y, n_fft=n_fft, hop_length=hop_length))**power
+
+    return S, n_fft
