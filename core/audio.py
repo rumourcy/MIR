@@ -9,7 +9,8 @@ import scipy.signal
 import util.utils as utils
 
 
-def load(path, sr=22050, mono=True, offset=0.0, duration=None, dtype=np.float32):
+def load(path, sr=22050, mono=True, offset=0.0, duration=None,
+         dtype=np.float32):
     y = []
     with audioread.audio_open(os.path.realpath(path)) as input_file:
         sr_native = input_file.samplerate

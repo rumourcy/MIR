@@ -1,8 +1,11 @@
 # -*- encoding:utf-8 -*-
 
 import numpy as np
+from numpy.lib.stride_tricks import as_strided
 
 from exceptions import ParameterError
+
+MAX_MEM_BLOCK = 2**8 * 2**10
 
 
 def buf_to_float(x, n_bytes=2, dtype=np.float32):
@@ -51,3 +54,43 @@ def fix_length(data, size, axis=-1, **kwargs):
         return np.pad(data, lengths, **kwargs)
 
     return data
+
+
+def frame(y, frame_length=2048, hop_length=512):
+    if not isinstance(y, np.ndarray):
+        raise ParameterError('Input must be of type numpy.ndarray, '
+                             'given type(y)={}'.format(type(y)))
+
+    if y.ndim != 1:
+        raise ParameterError('Input must be one-dimensional, '
+                             'given y.ndim={}'.format(y.ndim))
+
+    if len(y) < frame_length:
+        raise ParameterError('Buffer is too short (n={:d})'
+                             ' for frame_length={:d}'.format(
+                                 len(y), frame_length))
+
+    if hop_length < 1:
+        raise ParameterError('Invalid hop_length: {:d}'.format(hop_length))
+
+    if not y.flags['C_CONTIGUOUS']:
+        raise ParameterError('Input buffer must be contiguous.')
+
+    n_frames = 1 + int((len(y) - frame_length) / hop_length)
+    y_frames = as_strided(y, shape=(frame_length, n_frames),
+                          strides=(y.itemsize, hop_length * y.itemsize))
+    return y_frames
+
+
+def pad_center(data, size, axis=-1, **kwargs):
+    kwargs.setdefault('mode', 'constant')
+    n = data.shape[axis]
+    lpad = int((size-n) // 2)
+    lengths = [(0, 0)] * data.ndim
+    lengths[axis] = (lpad, int(size - n - lpad))
+
+    if lpad < 0:
+        raise ParameterError(('Target size ({:d}) must be '
+                              'at least input size ({:d})').format(size, n))
+
+    return np.pad(data, lengths, **kwargs)
